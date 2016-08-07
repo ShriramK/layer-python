@@ -3,6 +3,8 @@ import dateutil.parser
 import requests
 import json
 
+from urllib import urlencode
+
 try:
     from urlparse import urlparse
 except ImportError:
@@ -19,6 +21,9 @@ LAYER_URI_CONVERSATIONS = 'conversations'
 LAYER_URI_MESSAGES = 'messages'
 LAYER_URI_CONTENT = 'content'
 LAYER_URI_RECEIPTS = 'receipts'
+LAYER_URI_USERS = 'users'
+LAYER_URI_APPS = 'apps'
+LAYER_URI_WEBHOOKS = 'webhooks'
 
 class LayerPlatformException(Exception):
 
@@ -112,10 +117,12 @@ class PlatformClient(object):
         Return: A complete URI for an endpoint with optional arguments
         """
         suffix_string = '/'.join(suffixes) if suffixes else ''
-        return 'https://api.layer.com/apps/{app_id}/{suffix}'.format(
+        testingtheurlvalue = 'https://api.layer.com/apps/{app_id}/{suffix}'.format(
             app_id=self.app_uuid,
             suffix=suffix_string,
         )
+        print testingtheurlvalue
+        return testingtheurlvalue
 
     def _raw_request(self, method, url, data=None, extra_headers=None):
         """
@@ -160,6 +167,36 @@ class PlatformClient(object):
                 result.text,
                 http_code=result.status_code,
             )
+
+    def get_conversations_by_user(self, user_id):
+	    self._raw_request(
+            METHOD_GET,
+            self._get_layer_uri(
+                LAYER_URI_USERS,
+                user_id,
+                LAYER_URI_CONVERSATIONS,
+            ),
+        )
+
+    def get_all_conversations(self):
+        """
+        Fetch all conversations
+
+        Return: An array of 'Conversation' instances
+        """
+        print 'Entered get all conversations'
+        '''
+		request_data = {
+            'page_size': 100,
+        }
+		'''
+        self._raw_request(
+            METHOD_GET,
+            self._get_layer_uri(
+                LAYER_URI_CONVERSATIONS,
+            ),
+            #request_data,
+        )
 
     def get_conversation(self, conversation_uuid):
         """
@@ -328,16 +365,102 @@ class PlatformClient(object):
         - `type`: receipt message type
         """
         request_data = {
-            'type': type
+            'type': type,
         }
         self._raw_request(
             METHOD_POST,
             self._get_layer_uri(
-                LAYER_URI_MESSAGES,
-                message_uuid,
                 LAYER_URI_RECEIPTS,
+                message_uuid
             ),
             request_data,
+        )
+
+    def get_messages(self, user_id):
+        self._raw_request(
+            METHOD_GET,
+            self._get_layer_uri(
+                LAYER_URI_MESSAGES,
+                user_id,
+            )
+        )
+
+    '''
+    Webhooks
+    '''
+    def get_webhooks(self):
+       return self._raw_request(
+            METHOD_GET,
+            self._get_layer_uri(
+                 LAYER_URI_WEBHOOKS,
+            ),
+            extra_headers={
+                 'Accept': 'application/vnd.layer.webhooks+json; version=1.0'
+            }		
+       )
+
+    def register_webhook(self):
+       request_data = {
+            "version": "1.0",
+            "target_url": "https://layer-2300-dev.herokuapp.com/layerchat",
+            "events": [
+                 "conversation.created",
+                 "conversation.updated.participants",
+                 "conversation.updated.metadata",					  
+                 "conversation.deleted",
+                 "message.sent",
+                 "message.delivered",
+                 "message.read",
+                 "message.deleted",
+            ],
+            "secret": "1697f925ec7b1697f925ec7b",
+       }
+       return Webhook.from_dict(
+            self._raw_request(
+                 METHOD_POST,
+                 self._get_layer_uri(
+                      LAYER_URI_WEBHOOKS,
+                 ),
+                 request_data,
+                 extra_headers={
+                      'Accept': 'application/vnd.layer.webhooks+json; version=1.0'
+                 },
+            )
+       )
+
+    def get_webhook(self, webhook_uuid=''):
+        """
+        Fetching Webhooks
+
+        You can get the details and status of a single webhook by requesting it from the API:
+        """
+        return self._raw_request(
+            METHOD_GET,
+            self._get_layer_uri(
+                 LAYER_URI_WEBHOOKS,
+            ),
+            webhook_uuid,
+            extra_headers={
+                 'Accept': 'application/vnd.layer.webhooks+json; version=1.0'
+            }		
+        )
+
+    def activate_webhook(self, webhook_uuid=''):
+        """
+        Activating Webhooks
+
+        POST/apps/:app_uuid/webhooks/:webhook_uuid/activate
+        """
+        return self._raw_request(
+            METHOD_POST,
+            self._get_layer_uri(
+                 LAYER_URI_WEBHOOKS,
+            ),
+            webhook_uuid,
+            activate,
+            extra_headers={
+                 'Accept': 'application/vnd.layer.webhooks+json; version=1.0'
+            }
         )
 
 class Announcement(BaseLayerResponse):
@@ -401,7 +524,7 @@ class Message(BaseLayerResponse):
                 for part in dict_data.get('parts', [])
             ],
             dict_data.get('recipient_status'),
-            dict_data.get('is_unread'),
+			dict_data.get('is_unread'),
         )
 
     def __repr__(self):
@@ -649,3 +772,57 @@ class Conversation(BaseLayerResponse):
         return '<LayerClient.Conversation "{uuid}">'.format(
             uuid=self.uuid()
         )
+
+class Webhook(BaseLayerResponse):
+    """
+    Represents a Layer webhook.
+    "id": "layer:///apps/082d4684-0992-11e5-a6c0-1697f925ec7b/webhooks/f5ef2b54-0991-11e5-a6c0-1697f925ec7b",
+    "url": "https://api.layer.com/apps/082d4684-0992-11e5-a6c0-1697f925ec7b/webhooks/f5ef2b54-0991-11e5-a6c0-1697f925ec7b",
+    "version": "1.0",
+    "target_url": "https://server.example.com/layeruser/foo",
+    "events": [
+        "conversation.created",
+        "message.sent"
+    ],
+    "status": "active",
+    "created_at": "2015-03-14T13:37:27Z",
+    "config": {
+        "key1": "value1",
+        "key2": "value2"
+    }
+    """
+    def __init__(self, id, url, version='1.0', target_url='', events=[],
+	             status=None, created_at=None, config=None):
+        super(Webhook, self).__init__(id, url)
+        self.target_url = target_url
+        self.events = events
+        self.status = status
+        self.created_at = created_at
+        self.config = config
+
+    def as_dict(self):
+        return {
+            'id': self.id,
+            'url': self.url,
+            'target_url': self.target_url,
+            'events': self.events,
+            'status': self.status,
+            'created_at': self.created_at,
+        }
+
+    @staticmethod
+    def from_dict(dict_data):
+        return Webhook(
+            dict_data.get('id'),
+            dict_data.get('url'),
+            dict_data.get('target_url'),
+            dict_data.get('events'),
+            dict_data.get('status'),
+            Webhook.parse_date(dict_data.get('created_at')),			
+        )
+
+    def __repr__(self):
+        return '<LayerClient.Webhook "{uuid}">'.format(
+            uuid=self.uuid()
+        )
+
