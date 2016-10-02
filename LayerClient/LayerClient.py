@@ -24,6 +24,7 @@ LAYER_URI_RECEIPTS = 'receipts'
 LAYER_URI_USERS = 'users'
 LAYER_URI_APPS = 'apps'
 LAYER_URI_WEBHOOKS = 'webhooks'
+LAYER_URI_NONCES = 'nonces'
 
 class LayerPlatformException(Exception):
 
@@ -92,6 +93,12 @@ class PlatformClient(object):
         """
         self.app_uuid = app_uuid
         self.bearer_token = bearer_token
+        headers = {
+            'Accept': 'application/vnd.layer+json; version=1.0',
+            'Authorization': 'Bearer ' + self.bearer_token,
+            'Content-Type': 'application/json'
+        }
+        self.headers = headers
 
     def _get_layer_headers(self):
         """
@@ -101,11 +108,7 @@ class PlatformClient(object):
         Return: The headers required to authorize ourselves with the Layer
         platform API.
         """
-        return {
-            'Accept': 'application/vnd.layer+json; version=1.0',
-            'Authorization': 'Bearer ' + self.bearer_token,
-            'Content-Type': 'application/json'
-        }
+        return self.headers
 
     def _get_layer_uri(self, *suffixes):
         """
@@ -167,6 +170,12 @@ class PlatformClient(object):
                 result.text,
                 http_code=result.status_code,
             )
+
+    def set_headers(self, extra_headers):
+        headers = self._get_layer_headers()
+        if extra_headers:
+            headers.update(extra_headers)
+            self.headers = headers
 
     def get_conversations_by_user(self, user_id):
 	    self._raw_request(
@@ -461,6 +470,51 @@ class PlatformClient(object):
             extra_headers={
                  'Accept': 'application/vnd.layer.webhooks+json; version=1.0'
             }
+        )
+
+    def get_nonce(self):
+        """
+        Fetching nonce
+
+        POST /nonces
+        """
+        return self._raw_request(
+            METHOD_POST,
+            self._get_layer_uri(
+                LAYER_URI_NONCES,
+            ),
+            extra_headers={
+              'Accept': 'application/vnd.layer+json; version=1.0'
+            }
+        )
+
+    def get_identity_token(self):
+        """
+        Fetching identity token
+
+        POST /
+        """
+        pass
+
+    def get_session_token(self, identity_token, layer_app_id):
+        """
+        Fetching session token
+
+        POST /sessions
+        """
+        request_data = {
+            "identity_token": identity_token,
+            "app_id": layer_app_id
+        }
+        return self._raw_request(
+             METHOD_POST,
+             self._get_layer_uri(
+                  LAYER_URI_SESSIONS,
+             ),
+             request_data,
+             extra_headers={
+                  'Accept': 'application/vnd.layer+json; version=1.0'
+             }
         )
 
 class Announcement(BaseLayerResponse):
