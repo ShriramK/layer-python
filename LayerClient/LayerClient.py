@@ -504,7 +504,7 @@ class PlatformClient(object):
         """
         request_data = {
             "identity_token": identity_token,
-            "app_id": layer_app_id
+            "app_id": layer_app_id,
         }
         return self._raw_request(
              METHOD_POST,
