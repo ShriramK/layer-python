@@ -16,6 +16,7 @@ METHOD_GET = 'GET'
 METHOD_POST = 'POST'
 METHOD_DELETE = 'DELETE'
 
+LAYER_URI = 'https://api.layer.com'
 LAYER_URI_ANNOUNCEMENTS = 'announcements'
 LAYER_URI_CONVERSATIONS = 'conversations'
 LAYER_URI_MESSAGES = 'messages'
@@ -480,9 +481,7 @@ class PlatformClient(object):
         """
         return self._raw_request(
             METHOD_POST,
-            self._get_layer_uri(
-                LAYER_URI_NONCES,
-            ),
+            LAYER_URI+'/'+LAYER_URI_NONCES,
             extra_headers={
               'Accept': 'application/vnd.layer+json; version=1.0'
             }
@@ -508,9 +507,7 @@ class PlatformClient(object):
         }
         return self._raw_request(
              METHOD_POST,
-             self._get_layer_uri(
-                  LAYER_URI_SESSIONS,
-             ),
+             LAYER_URI+'/'+LAYER_URI_SESSIONS,
              request_data,
              extra_headers={
                   'Accept': 'application/vnd.layer+json; version=1.0'
