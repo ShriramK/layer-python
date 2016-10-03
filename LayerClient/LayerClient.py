@@ -26,6 +26,7 @@ LAYER_URI_USERS = 'users'
 LAYER_URI_APPS = 'apps'
 LAYER_URI_WEBHOOKS = 'webhooks'
 LAYER_URI_NONCES = 'nonces'
+LAYER_URI_SESSIONS = 'sessions'
 
 class LayerPlatformException(Exception):
 
