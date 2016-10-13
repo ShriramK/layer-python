@@ -180,7 +180,7 @@ class PlatformClient(object):
             self.headers = headers
 
     def get_conversations_by_user(self, user_id):
-	    self._raw_request(
+	    return self._raw_request(
             METHOD_GET,
             self._get_layer_uri(
                 LAYER_URI_USERS,
@@ -195,19 +195,21 @@ class PlatformClient(object):
 
         Return: An array of 'Conversation' instances
         """
+        #https://docs.layer.com/reference/client_api/conversations.out#get-all-conversations
         print 'Entered get all conversations'
-        '''
-		request_data = {
+        request_data = {
             'page_size': 100,
+            'sort_by':'last_message',
         }
-		'''
-        self._raw_request(
+        conversations_resp = self._raw_request(
             METHOD_GET,
-            self._get_layer_uri(
-                LAYER_URI_CONVERSATIONS,
-            ),
-            #request_data,
+            LAYER_URI+'/'+LAYER_URI_CONVERSATIONS,
+            request_data,
         )
+        conversations = []
+        for each in conversations_resp:
+            conversations.append(Conversation.from_dict(each))
+        return conversations
 
     def get_conversation(self, conversation_uuid):
         """
