@@ -206,9 +206,6 @@ class PlatformClient(object):
             LAYER_URI+'/'+LAYER_URI_CONVERSATIONS,
             request_data,
         )
-        conversations = []
-        for each in conversations_resp:
-            conversations.append(Conversation.from_dict(each))
         return conversations
 
     def get_conversation(self, conversation_uuid):
