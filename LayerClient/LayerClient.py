@@ -386,6 +386,24 @@ class PlatformClient(object):
             request_data,
         )
 
+    def get_all_messages(self, conversation_uuid):
+        """
+        Fetch all messages
+        https://docs.layer.com/reference/client_api/messages.out#get-all-messages
+
+        Return: An array of 'Message' instances
+        """
+        print 'Entered get all messages'
+        request_data = {
+            'page_size': 100,
+        }
+        messages_resp = self._raw_request(
+            METHOD_GET,
+            LAYER_URI+'/'+LAYER_URI_CONVERSATIONS+'/'+conversation_uuid+'/'+LAYER_URI_MESSAGES,
+            request_data,
+        )
+        return messages_resp
+
     def get_messages(self, user_id):
         self._raw_request(
             METHOD_GET,
@@ -561,6 +579,18 @@ class Message(BaseLayerResponse):
         self.parts = parts
         self.recipient_status = recipient_status
         self.is_unread = is_unread
+
+    def as_dict(self):
+        return {
+            'id': self.id,
+            'url': self.url,
+            'sent_at': self.sent_at,
+            'sender': self.sender,
+            'conversation': self.conversation,
+            'parts': self.parts,
+            'recipient_status': self.recipient_status,
+            'is_unread': self.is_unread,
+        }
 
     @staticmethod
     def from_dict(dict_data):
