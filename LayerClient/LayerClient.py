@@ -206,7 +206,7 @@ class PlatformClient(object):
             LAYER_URI+'/'+LAYER_URI_CONVERSATIONS,
             request_data,
         )
-        return conversations
+        return conversations_resp
 
     def get_conversation(self, conversation_uuid):
         """
